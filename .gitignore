@@ -1,0 +1,32 @@
+# Create .gitignore
+cat > .gitignore << EOF
+# Dependencies
+node_modules/
+
+# Uploads folder
+uploads/
+*.doc
+*.docx
+
+# CSV outputs
+*.csv
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# Test files (optional)
+test-*
+*-test.*
+EOF
