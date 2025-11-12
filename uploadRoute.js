@@ -1,12 +1,13 @@
 const express = require('express');
 const multer = require('multer');
+const mongoose = require('mongoose');
 const path = require('path');
-const { parseDocxToCSV } = require('./docxParser');
-const { bulkUploadCSV } = require('./bulkUpload');
+const { parseBGVFormToCSV } = require('./bgvParser');
+const { Candidate } = require('./bgvSchema');
 
 const router = express.Router();
 
-// Configure multer for file uploads
+// Multer setup (same as before)
 const storage = multer.diskStorage({
   destination: './uploads/',
   filename: (req, file, cb) => {
@@ -17,7 +18,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    if (path.extname(file.originalname) === '.docx') {
+    if (path.extname(file.originalname).toLowerCase() === '.docx') {
       cb(null, true);
     } else {
       cb(new Error('Only .docx files allowed'));
@@ -25,26 +26,47 @@ const upload = multer({
   }
 });
 
-// Upload and process route
+// Upload and save to MongoDB
 router.post('/upload-docx', upload.single('docx'), async (req, res) => {
   try {
     const docxPath = req.file.path;
     const csvPath = `./uploads/${Date.now()}-candidates.csv`;
     
-    // Step 1: Parse DOCX to CSV
-    await parseDocxToCSV(docxPath, csvPath);
+    // Parse DOCX
+    const parsedData = await parseBGVFormToCSV(docxPath, csvPath);
     
-    // Step 2: Bulk upload CSV to MongoDB
-    const result = await bulkUploadCSV(csvPath);
+    // Save to MongoDB
+    const candidate = new Candidate({
+      candidateId: new mongoose.Types.ObjectId().toString(),
+      firstName: parsedData[0].firstName,
+      middleName: parsedData[0].middleName,
+      surname: parsedData[0].surname,
+      dateOfBirth: parsedData[0].dateOfBirth,
+      nationalId: parsedData[0].nationalId,
+      homePhone: parsedData[0].homePhone,
+      permanentAddress: {
+        address: parsedData[0].permanentAddress,
+        city: parsedData[0].permanentCity
+      },
+      currentAddress: {
+        address: parsedData[0].currentAddress,
+        city: parsedData[0].currentCity
+      },
+      status: 'pending'
+    });
+    
+    const savedCandidate = await candidate.save();
     
     res.status(200).json({
-      message: 'File processed and uploaded successfully',
-      candidatesAdded: result.length
+      message: 'Candidate saved to MongoDB successfully!',
+      candidateId: savedCandidate._id,
+      data: savedCandidate
     });
     
   } catch (error) {
+    console.error('Error:', error);
     res.status(500).json({
-      message: 'Processing failed',
+      message: 'Failed to process',
       error: error.message
     });
   }
