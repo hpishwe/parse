@@ -1,105 +1,130 @@
 
 
-### Step 1: Clone and Install
+#### Step 1: Put Forms in a Folder
 
-```
-# Clone the repository
-git clone https://github.com/hpishwe/parse.git
+Create a folder and add all your BGV forms:
 
-# Navigate to project directory
-cd parse
+my-forms/
+├── candidate-001.pdf
+├── john-doe-application.docx
+├── jane-smith-form.doc
+├── resume_2023.pdf
+text
 
-# Install dependencies
-npm install
+#### Step 2: Run Bulk Processor
 
-# Create uploads folder
-mkdir uploads
-```
+node bulkProcessor.js ./my-forms
 
-### Step 2: Prepare Your BGV Form
+text
 
-1. Open your BGV Consent Form in Microsoft Word
-2. Fill in sample candidate data (or use a filled form)
-3. **Important:** Save as `.docx` format (not `.doc`)
-   - File → Save As → Choose "Word Document (.docx)"
+Replace `./my-forms` with your folder path.
 
-### Step 3: Test the Parser
+#### Step 3: Check Results
+You'll see progress for each file:
 
-```
-# Run the test script
-node testBGV.js
-```
+✅ Connected to MongoDB
 
-**Expected Output:**
-```
-🚀 Testing BGV form parsing...
-📄 Reading BGV form from: D:\parse\parse\BGV Consent Form.docx
-✅ Text extracted, parsing form data...
-📊 Parsed candidate data
-✅ CSV created successfully at: D:\parse\parse\bgv-output.csv
-```
+📦 Found 150 files to process
 
-**Check Results:**
-- Open `bgv-output.csv` to see extracted data
-- Verify candidate information was parsed correctly
+[1/150] Processing: candidate-001.pdf
+✅ Success
 
-### Step 4: Run the Server (Optional)
+[2/150] Processing: john-doe-application.docx
+✅ Success
 
-```
-# Start the Express server
-node server.js
-```
+...
 
-**Server starts at:** `http://localhost:3000`
+==================================================
+📊 PROCESSING COMPLETE
+✅ Success: 148
+❌ Failed: 2
 
-### Step 5: Test API with Postman
+text
 
-1. Open Postman
-2. Create new request:
-   - **Method:** POST
-   - **URL:** `http://localhost:3000/api/upload-docx`
-3. Configure request:
-   - Go to **Body** tab
-   - Select **form-data**
-   - Add key: `docx` (change type to **File**)
-   - Select your filled BGV form (.docx)
-4. Click **Send**
+---
 
-**Expected Response:**
-```
+### Option 3: API Upload (For Developers)
+
+**Upload via REST API using Postman or code**
+
+**Endpoint:** `POST http://localhost:3000/api/upload-docx`
+
+**Request:**
+- Method: `POST`
+- Content-Type: `multipart/form-data`
+- Body: 
+  - Key: `docx` (type: File)
+  - Value: Your BGV form file
+
+**Response:**
 {
-  "message": "File processed successfully",
-  "candidatesProcessed": 1,
-  "csvFile": "./uploads/1699523400000-candidates.csv",
-  "data": [...]
+"message": "Candidate saved to MongoDB successfully!",
+"candidateId": "673a8b5c9d1e2f3a4b5c6d7e",
+"data": { ... }
 }
-```
 
-### Step 6: Verify Output
+text
 
-```
-# Check CSV was created
-ls uploads/
+**Using cURL:**
+curl -X POST http://localhost:3000/api/upload-docx
+-F "docx=@/path/to/your/form.pdf"
 
-# View CSV content
-cat uploads/*.csv
-```
+text
 
-## ✅ You're All Set!
+## 📁 Project Structure
 
-The project is now running and ready to parse BGV forms. Upload additional forms via the API or run `testBGV.js` with different files.
+parse/
+├── .env # Environment variables (MongoDB URI)
+├── .gitignore # Git ignore rules
+├── package.json # Dependencies
+├── README.md # This file
+│
+├── server.js # Main server entry point
+├── bgvSchema.js # MongoDB candidate schema
+├── uploadRoute.js # API routes
+├── universalParser.js # Handles PDF/DOCX/DOC parsing
+├── bulkProcessor.js # Bulk file processing
+│
+├── testBGV.js # Test single file
+├── BGV Consent Form.docx # Sample form
+│
+├── public/
+│ └── index.html # Web upload interface
+│
+├── node_modules/ # Dependencies (auto-generated)
+├── uploads/ # Single file uploads (auto-created)
+└── bulk-forms/ # Put bulk files here
 
-## 🐛 Troubleshooting
+text
 
-**Issue:** `Error: Could not find the body element`
-- **Solution:** Your file is in `.doc` format. Convert to `.docx`
+## 🎯 Quick Commands Cheatsheet
 
-**Issue:** `Cannot find module 'mammoth'`
-- **Solution:** Run `npm install`
+| Task | Command |
+|------|---------|
+| Install dependencies | `npm install` |
+| Start server | `npm start` |
+| Test single file | `node testBGV.js` |
+| Bulk process (default folder) | `node bulkProcessor.js` |
+| Bulk process (custom folder) | `node bulkProcessor.js ./your-folder` |
+| Check MongoDB connection | See server logs after `npm start` |
 
-**Issue:** All fields show labels instead of data
-- **Solution:** Your form is blank. Fill it with actual candidate data
+## 📊 View Parsed Data
 
-**Issue:** `ENOENT: no such file or directory`
-- **Solution:** Create the `uploads` folder: `mkdir uploads`
-```
+### In MongoDB Atlas:
+
+1. Go to [MongoDB Atlas Dashboard](https://cloud.mongodb.com)
+2. Click **"Browse Collections"**
+3. Select database: `hr-verification`
+4. Select collection: `candidates`
+5. View all parsed candidate records! 🎉
+
+### Data Schema:
+
+Each candidate document contains:
+- Personal info (name, DOB, ID)
+- Contact details (phone, email)
+- Addresses (permanent, current)
+- Education history
+- Employment history
+- Status (pending/verified)
+- Source filename

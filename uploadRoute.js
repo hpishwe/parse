@@ -18,13 +18,15 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    if (path.extname(file.originalname).toLowerCase() === '.docx') {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.pdf', '.docx', '.doc'].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Only .docx files allowed'));
+      cb(new Error('Only PDF, DOCX, and DOC files are allowed'));
     }
   }
 });
+
 
 // Upload and save to MongoDB
 router.post('/upload-docx', upload.single('docx'), async (req, res) => {
